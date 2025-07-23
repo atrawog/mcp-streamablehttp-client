@@ -519,20 +519,8 @@ async def check_and_refresh_tokens(settings: Settings) -> None:
         save_env_var("MCP_CLIENT_REGISTRATION_URI", settings.registration_client_uri)
         console.print("   ✅ Saved MCP_CLIENT_REGISTRATION_URI")
 
-    # Print MCP client environment variables in a format that can be captured
-    # Only output credentials, not endpoints (which are auto-discovered)
-    print("\n# MCP Client Environment Variables")
-    print(f"export MCP_CLIENT_ACCESS_TOKEN={settings.oauth_access_token}")
-    if settings.oauth_refresh_token and settings.oauth_refresh_token != "None":  # noqa: S105
-        print(f"export MCP_CLIENT_REFRESH_TOKEN={settings.oauth_refresh_token}")
-    if settings.oauth_client_id:
-        print(f"export MCP_CLIENT_ID={settings.oauth_client_id}")
-    if settings.oauth_client_secret:
-        print(f"export MCP_CLIENT_SECRET={settings.oauth_client_secret}")
-    if settings.registration_access_token:
-        print(f"export MCP_CLIENT_REGISTRATION_TOKEN={settings.registration_access_token}")
-    if settings.registration_client_uri:
-        print(f"export MCP_CLIENT_REGISTRATION_URI={settings.registration_client_uri}")
+    # All credentials have been saved to .env file
+    # No need to print export commands since they're already persisted
 
     # Print success message
     console.print("\n[green]✅ MCP client credentials saved to .env![/green]")

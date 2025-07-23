@@ -12,7 +12,6 @@ from urllib.parse import urlparse
 import httpx
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 from rich.console import Console
-from rich.panel import Panel
 from rich.progress import Progress
 from rich.progress import SpinnerColumn
 from rich.progress import TextColumn
@@ -125,6 +124,9 @@ class OAuthClient:
         if self.settings.needs_registration():
             console.print("Registering OAuth client...")
             await self.register_client()
+        else:
+            # Validate existing client has correct redirect URIs
+            await self._validate_client_redirect_uris()
 
         # Setup OAuth client after registration
         self._setup_oauth_client()
@@ -192,6 +194,48 @@ class OAuthClient:
             logger.error(f"Client registration failed: {e}")
             raise RuntimeError(f"Failed to register OAuth client: {e}") from e
 
+    async def _validate_client_redirect_uris(self) -> None:
+        """Validate existing client has correct redirect URIs, update if needed."""
+        required_redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
+        
+        # Skip validation if no RFC 7592 credentials (old client)
+        if not self.settings.registration_access_token or not self.settings.registration_client_uri:
+            logger.warning(
+                "Cannot validate redirect URIs - no RFC 7592 credentials. "
+                "Consider re-registering with --reset-auth if authorization fails."
+            )
+            return
+        
+        try:
+            # Get current client configuration
+            console.print("[dim]Validating OAuth client configuration...[/dim]")
+            config = await self.get_client_configuration()
+            
+            # Check if required redirect URI is present
+            redirect_uris = config.get("redirect_uris", [])
+            if required_redirect_uri not in redirect_uris:
+                console.print(f"[yellow]Updating client redirect URIs to include {required_redirect_uri}[/yellow]")
+                
+                # Add the required URI
+                updated_uris = list(redirect_uris)  # Copy existing URIs
+                if required_redirect_uri not in updated_uris:
+                    updated_uris.append(required_redirect_uri)
+                
+                # Update client configuration
+                await self.update_client_configuration({"redirect_uris": updated_uris})
+                console.print("[green]✓[/green] Client redirect URIs updated successfully")
+                logger.info(f"Added {required_redirect_uri} to client redirect URIs")
+            else:
+                logger.debug("Client redirect URIs already include required URI")
+                
+        except Exception as e:
+            # Log warning but don't fail - let auth attempt proceed
+            logger.warning(f"Could not validate/update redirect URIs: {e}")
+            console.print(
+                "[yellow]Warning:[/yellow] Could not validate client configuration. "
+                "If authorization fails, try --reset-auth to re-register."
+            )
+
     async def device_flow_auth(self) -> None:
         """Perform OAuth device flow authentication using Authlib."""
         if not self.oauth_client:
@@ -221,15 +265,11 @@ class OAuthClient:
         verification_uri = device_data.get("verification_uri", "")
 
         console.print("\n")
-        console.print(
-            Panel.fit(
-                f"[bold cyan]Please visit:[/bold cyan]\n{verification_uri}\n\n"
-                f"[bold cyan]And enter code:[/bold cyan]\n[bold yellow]{user_code}[/bold yellow]",  # TODO: Break long line
-                title="Device Authorization",
-                border_style="cyan",
-            ),
-        )
-        console.print("\n")
+        console.print("[bold cyan]═══ Device Authorization Required ═══[/bold cyan]")
+        console.print("\n[bold cyan]Please visit:[/bold cyan]")
+        console.print(f"[yellow]{verification_uri}[/yellow]")
+        console.print("\n[bold cyan]And enter code:[/bold cyan]")
+        console.print(f"[bold yellow]{user_code}[/bold yellow]\n")
 
     async def _poll_for_device_token(self, device_data: dict[str, Any]) -> None:
         """Poll for device authorization token."""
@@ -311,13 +351,10 @@ class OAuthClient:
         )
 
         console.print("\n")
-        console.print(
-            Panel.fit(
-                f"[bold cyan]Please visit this URL to authorize:[/bold cyan]\n\n{auth_url}",  # TODO: Break long line
-                title="Manual Authorization",
-                border_style="cyan",
-            ),
-        )
+        console.print("[bold cyan]═══ Manual Authorization Required ═══[/bold cyan]")
+        console.print("\n[bold cyan]Please visit this URL to authorize:[/bold cyan]")
+        console.print("[dim](Copy the entire URL below, it may wrap across lines)[/dim]")
+        console.print(f"\n[yellow]{auth_url}[/yellow]\n")
 
         # Wait for user to paste authorization code
         console.print("\n")
