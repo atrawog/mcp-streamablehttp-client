@@ -304,8 +304,8 @@ async def check_and_refresh_tokens(settings: Settings) -> None:
         console.print("[green]✓[/green] OAuth endpoints configured")
         console.print(f"[dim]  Authorization: {settings.oauth_authorization_url}[/dim]")
         console.print(f"[dim]  Token: {settings.oauth_token_url}[/dim]")
-        if settings.oauth_device_auth_url:
-            console.print(f"[dim]  Device: {settings.oauth_device_auth_url}[/dim]")
+        if settings.oauth_device_api_url:
+            console.print(f"[dim]  Device: {settings.oauth_device_api_url}[/dim]")
         if settings.oauth_registration_url:
             console.print(f"[dim]  Registration: {settings.oauth_registration_url}[/dim]")
 

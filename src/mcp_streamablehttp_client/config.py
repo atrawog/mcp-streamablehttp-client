@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     oauth_issuer: str | None = Field(None, description="OAuth issuer URL (discovered from server)")
     oauth_authorization_url: str | None = Field(None, description="OAuth authorization endpoint (discovered)")
     oauth_token_url: str | None = Field(None, description="OAuth token endpoint (discovered)")
-    oauth_device_auth_url: str | None = Field(None, description="OAuth device authorization endpoint (discovered)")
+    oauth_device_api_url: str | None = Field(None, description="OAuth device authorization endpoint (discovered)")
     oauth_registration_url: str | None = Field(
         None,
         description="OAuth dynamic client registration endpoint (discovered)",

@@ -132,7 +132,7 @@ class OAuthClient:
         self._setup_oauth_client()
 
         # Perform authentication flow
-        if self.settings.oauth_device_auth_url:
+        if self.settings.oauth_device_api_url:
             console.print("Starting device authorization flow...")
             await self.device_flow_auth()
         else:
@@ -253,7 +253,7 @@ class OAuthClient:
     async def _request_device_code(self) -> dict[str, Any]:
         """Request device code using Authlib."""
         response = await self.http_client.post(
-            self.settings.oauth_device_auth_url,
+            self.settings.oauth_device_api_url,
             data={"client_id": self.settings.oauth_client_id, "scope": "read write"},
         )
         response.raise_for_status()
@@ -343,7 +343,7 @@ class OAuthClient:
             )
 
         # Generate authorization URL with PKCE
-        auth_url, state = self.oauth_client.create_authorization_url(
+        api_url, state = self.oauth_client.create_authorization_url(
             self.settings.oauth_authorization_url,
             redirect_uri="urn:ietf:wg:oauth:2.0:oob",
             scope="read write",
@@ -354,7 +354,7 @@ class OAuthClient:
         console.print("[bold cyan]═══ Manual Authorization Required ═══[/bold cyan]")
         console.print("\n[bold cyan]Please visit this URL to authorize:[/bold cyan]")
         console.print("[dim](Copy the entire URL below, it may wrap across lines)[/dim]")
-        console.print(f"\n[yellow]{auth_url}[/yellow]\n")
+        console.print(f"\n[yellow]{api_url}[/yellow]\n")
 
         # Wait for user to paste authorization code
         console.print("\n")
@@ -421,7 +421,7 @@ class OAuthClient:
             self.settings.oauth_issuer = metadata.get("issuer")
             self.settings.oauth_authorization_url = metadata.get("authorization_endpoint")
             self.settings.oauth_token_url = metadata.get("token_endpoint")
-            self.settings.oauth_device_auth_url = metadata.get("device_authorization_endpoint")
+            self.settings.oauth_device_api_url = metadata.get("device_authorization_endpoint")
             self.settings.oauth_registration_url = metadata.get("registration_endpoint")
 
             # Validate required endpoints
@@ -440,12 +440,12 @@ class OAuthClient:
     async def _find_oauth_metadata_url(self) -> str | None:
         """Find OAuth metadata URL by trying various locations."""
         parsed = urlparse(self.settings.mcp_server_url)
-        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        api_url = f"{parsed.scheme}://{parsed.netloc}"
 
         # Try OAuth discovery on the same domain first (now that it's fixed!)
         candidates = [
-            f"{base_url}/.well-known/oauth-authorization-server",
-            f"{base_url}/.well-known/openid-configuration",
+            f"{api_url}/.well-known/oauth-authorization-server",
+            f"{api_url}/.well-known/openid-configuration",
         ]
 
         # Also try auth subdomain as fallback
