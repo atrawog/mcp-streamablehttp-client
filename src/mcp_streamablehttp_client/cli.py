@@ -43,7 +43,7 @@ def setup_logging(level: str) -> None:
     default="INFO",
     help="Logging level",
 )
-@click.option("--server-url", help="Override MCP server URL from .env")
+@click.option("--server-url", help="Override server URL from .env")
 @click.option("--reset-auth", is_flag=True, help="Clear stored credentials and re-authenticate")
 @click.option("--test-auth", is_flag=True, help="Test authentication and exit")
 @click.option(
@@ -76,10 +76,10 @@ def setup_logging(level: str) -> None:
 )
 @click.option(
     "--raw",
-    help=('Send raw JSON-RPC request to MCP server. Example: --raw \'{"method": "tools/list", "params": {}}\''),
+    help=('Send raw JSON-RPC request to server. Example: --raw \'{"method": "tools/list", "params": {}}\''),
 )
 @click.option("--list-tools", is_flag=True, help="List all available MCP tools")
-@click.option("--list-resources", is_flag=True, help="List all available MCP resources")
+@click.option("--list-resources", is_flag=True, help="List all available protected resources")
 @click.option("--list-prompts", is_flag=True, help="List all available MCP prompts")
 def main(
     env_file: Path,
@@ -224,9 +224,9 @@ async def async_main(
                 console.print("[green]✓[/green] Authentication successful!")
                 console.print(f"[dim]Access token: {token[:20]}...[/dim]")
 
-                # Test connection to MCP server
+                # Test connection to server
                 async with StreamableHttpToStdioProxy(settings) as proxy:
-                    console.print("\n[cyan]Testing MCP server connection...[/cyan]")
+                    console.print("\n[cyan]Testing server connection...[/cyan]")
                     test_request = {
                         "jsonrpc": "2.0",
                         "method": "initialize",
